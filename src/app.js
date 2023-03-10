@@ -1,4 +1,6 @@
 const express = require('express'); 
+const validateTeam = require('./middlewares/validateTeam');
+const existingId = require('./middlewares/existingId');
 
 const teams = [
   {
@@ -25,7 +27,7 @@ res.status(200).json({ message: 'Olá Mundo! Esse é um projeto iniciante' }));
 app.get('/teams', (req, res) => res.status(200).json({ teams }));
 
 // Rota de time especifico mostrar apenas ele, caso não exista o id passado, erro 404
-app.get('/teams/:id', (req, res) => {
+app.get('/teams/:id', existingId, (req, res) => {
   const team = teams.find((teamId) => teamId.id === Number(req.params.id));
   if (!team) {
     res.status(404).json({ message: 'Team not found' });
@@ -34,15 +36,16 @@ app.get('/teams/:id', (req, res) => {
 });
 
 // Criar novo time
-app.post('/teams', (req, res) => {
-  const newTeam = { ...req.body };
+app.post('/teams', validateTeam, (req, res) => {
+  const maxId = Math.max(...teams.map((team) => team.id));
+  const newTeam = { id: maxId + 1, ...req.body };
   teams.push(newTeam);
 
   res.status(201).json({ team: newTeam });
 });
 
 // Atualizar time
-app.put('/teams/:id', (req, res) => {
+app.put('/teams/:id', validateTeam, existingId, (req, res) => {
   const { id } = req.params;
   const { name, initials } = req.body;
 
@@ -57,7 +60,7 @@ app.put('/teams/:id', (req, res) => {
   res.status(200).json({ updateTeam });
 });
 
-app.delete('/teams/:id', (req, res) => {
+app.delete('/teams/:id', existingId, (req, res) => {
   const { id } = req.params;
   const arrayPosition = teams.findIndex((team) => team.id === Number(id));
   teams.splice(arrayPosition, 1);
